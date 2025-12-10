@@ -1,55 +1,53 @@
 #!/bin/bash
 
-set -e  # Exit on error
+# Installer for KBot (macOS/Linux)
+# Non-sudo, with colors and error suppression
 
-BIN_DIR="$HOME/.local/bin"
-SCRIPT_URL="https://raw.githubusercontent.com/VolcanoExacutor/Kahoot-Bot-spammer/refs/heads/main/main/Main.py"
-KBOT_PATH="$BIN_DIR/kbot.py"
-WRAPPER="$BIN_DIR/kbot"
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
 
-# Function to print errors in red
-error() {
-    echo -e "\e[31mError: $1\e[0m"
-}
+# Suppress curl progress output
+CURL_OPTS="-sS --fail"
 
-# Function to print success in green
-success() {
-    echo -e "\e[32m$1\e[0m"
-}
+SCRIPT_URL="https://raw.githubusercontent.com/VolcanoExacutor/Kahoot-Bot-spammer/main/Main.py"
+INSTALL_DIR="$HOME/.local/bin"
 
-# Check if curl is installed
-if ! command -v curl &> /dev/null; then
-    error "curl is not installed. Please install curl and run this script again."
+echo -e "${GREEN}[+] Creating install directory: $INSTALL_DIR${NC}" 2>/dev/null
+mkdir -p "$INSTALL_DIR" 2>/dev/null
+
+echo -e "${GREEN}[+] Downloading KBot...${NC}"
+curl $CURL_OPTS "$SCRIPT_URL" -o "$INSTALL_DIR/kbot.py" 2>/dev/null
+
+if [ $? -ne 0 ]; then
+    echo -e "${RED}[-] Failed to download KBot script! Check your internet or URL.${NC}"
     exit 1
 fi
 
-# Create local bin directory
-mkdir -p "$BIN_DIR" || { error "Failed to create $BIN_DIR"; exit 1; }
+echo -e "${GREEN}[+] Download complete.${NC}"
 
-# Download the Python script
-echo "Downloading kbot..."
-if ! curl -fLsS "$SCRIPT_URL" -o "$KBOT_PATH"; then
-    error "Failed to download kbot script from $SCRIPT_URL"
-    exit 1
+echo -e "${GREEN}[+] Making KBot executable...${NC}"
+chmod +x "$INSTALL_DIR/kbot.py" 2>/dev/null
+
+# Create wrapper to run as 'kbot'
+WRAPPER="$INSTALL_DIR/kbot"
+echo -e "${GREEN}[+] Creating wrapper script: $WRAPPER${NC}"
+cat > "$WRAPPER" << EOF
+#!/bin/bash
+python3 "$INSTALL_DIR/kbot.py" "\$@"
+EOF
+
+chmod +x "$WRAPPER" 2>/dev/null
+
+# Add ~/.local/bin to PATH if not already
+if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
+    SHELL_RC="$HOME/.bashrc"
+    [[ -f "$HOME/.zshrc" ]] && SHELL_RC="$HOME/.zshrc"
+    echo -e "${YELLOW}[!] Adding $INSTALL_DIR to PATH in $SHELL_RC${NC}"
+    echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$SHELL_RC" 2>/dev/null
+    echo -e "${GREEN}[+] PATH updated. Restart your terminal or run: source $SHELL_RC${NC}"
 fi
 
-# Make it executable
-chmod +x "$KBOT_PATH" || { error "Failed to make kbot executable"; exit 1; }
-
-# Detect shell
-SHELL_RC="$HOME/.bashrc"
-if [ "$SHELL" = "/bin/zsh" ]; then
-    SHELL_RC="$HOME/.zshrc"
-fi
-
-# Add bin directory to PATH if missing
-if ! grep -q 'export PATH="$HOME/.local/bin:$PATH"' "$SHELL_RC"; then
-    echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$SHELL_RC" || { error "Failed to update PATH in $SHELL_RC"; exit 1; }
-    echo "Added $BIN_DIR to PATH. Restart your terminal or run: source $SHELL_RC"
-fi
-
-# Create wrapper so user can run 'kbot' directly
-echo -e "#!/bin/bash\npython3 \"$KBOT_PATH\" \"\$@\"" > "$WRAPPER" || { error "Failed to create wrapper"; exit 1; }
-chmod +x "$WRAPPER" || { error "Failed to make wrapper executable"; exit 1; }
-
-success "Installation complete! You can now run 'kbot -h' for help."
+echo -e "${GREEN}[+] Installation complete! You can now run: kbot -h${NC}"
