@@ -1,19 +1,30 @@
 #!/bin/bash
 
-# Create a directory for local binaries if it doesn't exist
-mkdir -p "$HOME/.local/bin"
+# User local bin
+BIN_DIR="$HOME/.local/bin"
+mkdir -p "$BIN_DIR"
 
-# Copy kbot.py to the bin directory
-cp kbot.py "$HOME/.local/bin/kbot"
+# Download the Python script
+echo "Downloading kbot..."
+curl -sL "https://raw.githubusercontent.com/VolcanoExacutor/Kahoot-Bot-spammer/refs/heads/main/Main.py" -o "$BIN_DIR/kbot.py"
 
 # Make it executable
-chmod +x "$HOME/.local/bin/kbot"
+chmod +x "$BIN_DIR/kbot.py"
 
-# Add ~/.local/bin to PATH if it's not already there
-if ! grep -q 'export PATH="$HOME/.local/bin:$PATH"' "$HOME/.bashrc"; then
-    echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$HOME/.bashrc"
-    echo 'Added ~/.local/bin to PATH in ~/.bashrc. Please restart your terminal or run:'
-    echo 'source ~/.bashrc'
+# Add bin to PATH if not already
+SHELL_RC="$HOME/.bashrc"
+if [ "$SHELL" = "/bin/zsh" ]; then
+    SHELL_RC="$HOME/.zshrc"
 fi
 
-echo "Run "
+if ! grep -q 'export PATH="$HOME/.local/bin:$PATH"' "$SHELL_RC"; then
+    echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$SHELL_RC"
+    echo "Added $BIN_DIR to PATH. Please restart terminal or run: source $SHELL_RC"
+fi
+
+# Create a small wrapper so user can just type 'kbot'
+WRAPPER="$BIN_DIR/kbot"
+echo -e "#!/bin/bash\npython3 \"$BIN_DIR/kbot.py\" \"\$@\"" > "$WRAPPER"
+chmod +x "$WRAPPER"
+
+echo "Installation complete! You can now run 'kbot -h' for help."
