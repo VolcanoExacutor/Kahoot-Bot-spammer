@@ -38,11 +38,11 @@ chmod +x installlinux.sh
 ```
 Step 4: Run the installer:
 ```bash
-./installmac
+./installmac.sh
 ```
 or for linux
 ```bash
-./installlinux
+./installlinux.sh
 ```
 Step 5: Verify installation:
 ```bash
