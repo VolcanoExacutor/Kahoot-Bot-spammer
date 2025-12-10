@@ -22,11 +22,19 @@ Installation (Linux/macOS, Non-Sudo)
 --------------------------------------------------
 
 Step 1: Download the installer:
-curl -sL https://raw.githubusercontent.com/YourUsername/YourRepo/main/install.sh -o install.sh
+Download the lastest version for the releases tab: https://github.com/VolcanoExacutor/Kahoot-Bot-spammer/releases
 
 Step 2: Run the installer:
-bash install.sh
-
+```bash
+cd downloads
+```
+```bash
+./installmac
+```
+or for linux
+```bash
+./installlinux
+```
 Step 3: Restart your terminal or source your shell configuration:
 source ~/.bashrc   # or ~/.zshrc for zsh
 
