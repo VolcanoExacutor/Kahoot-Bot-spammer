@@ -1,6 +1,6 @@
-==================================================
+--------------------------------------------------
 KBot - Kahoot Bot CLI
-==================================================
+--------------------------------------------------
 
 KBot is a command-line tool to send bots to a Kahoot game. It supports multiple bots, custom nicknames, and has robust error handling.
 
