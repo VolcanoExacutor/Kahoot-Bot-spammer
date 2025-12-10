@@ -1,107 +1,72 @@
 #!/usr/bin/env python3
 import argparse
+import warnings
+from urllib3.exceptions import NotOpenSSLWarning
 import requests
-import sys
+import urllib3
+import time
 
-def send_request(pin, amount, name):
-    url = "https://kahootbot.net/api/init"
-    headers = {
-        "accept": "*/*",
-        "accept-language": "en-US,en;q=0.9,nl;q=0.8,pl;q=0.7,fr;q=0.6,vi;q=0.5,hu;q=0.4,fa;q=0.3,zh-CN;q=0.2,zh;q=0.1",
-        "content-type": "application/x-www-form-urlencoded",
-        "origin": "https://kahootbot.net",
-        "priority": "u=1, i",
-        "referer": "https://kahootbot.net/",
-        "sec-ch-ua": '"Chromium";v="140", "Not=A?Brand";v="24", "Opera GX";v="124"',
-        "sec-ch-ua-mobile": "?0",
-        "sec-ch-ua-platform": '"macOS"',
-        "sec-fetch-dest": "empty",
-        "sec-fetch-mode": "cors",
-        "sec-fetch-site": "same-origin",
-        "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36 OPR/124.0.0.0 (Edition std-1)"
-    }
+# Suppress urllib3 OpenSSL warning
+warnings.filterwarnings("ignore", category=NotOpenSSLWarning)
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-    data = {
-        "pin": pin,
-        "amount": amount,
-        "name": name,
-        "clientId": "qm68612le",
-        "recaptchaToken": "true"
-    }
-
-    try:
-        response = requests.post(url, headers=headers, data=data, timeout=10)
-    except requests.ConnectionError:
-        print("Error: Could not connect to KahootBot API. Check your internet connection.")
-        return
-    except requests.Timeout:
-        print("Error: Request timed out. Try again later.")
-        return
-    except requests.RequestException as e:
-        print(f"Error: Unexpected request error: {e}")
-        return
-
-    if response.status_code == 200:
-        print("Request sent successfully!")
-        print(response.text)
-    elif response.status_code == 400:
-        print("Error: Bad request. Check your arguments and try again.")
-    elif response.status_code == 403:
-        print("Error: Forbidden. You may not have permission to use this API.")
-    elif response.status_code == 404:
-        print("Error: API endpoint not found.")
-    elif response.status_code >= 500:
-        print("Error: Server error at KahootBot API. Try again later.")
-    else:
-        print(f"Error: Unexpected status code {response.status_code}")
-        print(response.text)
-
+# Colors
+RED = "\033[31m"
+GREEN = "\033[32m"
+YELLOW = "\033[33m"
+RESET = "\033[0m"
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Kahoot Bot CLI - Send bots to a Kahoot game",
-        epilog="Example:\n  kbot -p 8747647 -a 10 -n Nathaniel",
-        formatter_class=argparse.RawDescriptionHelpFormatter
+        description=f"{GREEN}Kahoot Bot CLI - Send bots to a Kahoot game{RESET}"
     )
+    parser.add_argument("-p", "--pin", required=True, help="Kahoot game PIN")
+    parser.add_argument("-a", "--amount", required=True, type=int, help="Number of bots to join (1-50)")
+    parser.add_argument("-n", "--name", required=True, help="Nickname for the bot")
+    args = parser.parse_args()
 
-    parser.add_argument("-p", "--pin", type=str, required=True, help="Kahoot game PIN")
-    parser.add_argument("-a", "--amount", type=int, required=True, help="Number of bots to join (1-50)")
-    parser.add_argument("-n", "--name", type=str, required=True, help="Nickname for the bot")
+    pin = args.pin
+    amount = args.amount
+    name = args.name
 
-    try:
-        args = parser.parse_args()
-    except SystemExit:
-        # argparse will already print the error
+    # Validation
+    if not pin.isdigit():
+        print(f"{RED}[-] Error: PIN must be numeric{RESET}")
+        return
+    if amount < 1 or amount > 50:
+        print(f"{RED}[-] Error: Amount must be between 1 and 50{RESET}")
+        return
+    if len(name.strip()) == 0 or len(name) > 20:
+        print(f"{RED}[-] Error: Name must be 1-20 characters{RESET}")
         return
 
-    # Validate PIN
-    if not args.pin.isdigit():
-        print("Error: PIN must be numeric.")
-        return
-    if len(args.pin) < 5 or len(args.pin) > 10:
-        print("Error: PIN length seems invalid (should be 5-10 digits).")
-        return
+    print(f"{GREEN}[+] Starting KBot with PIN {pin}, {amount} bots, nickname '{name}'{RESET}")
 
-    # Validate amount
-    if not (1 <= args.amount <= 50):
-        print("Error: Amount must be an integer between 1 and 50.")
-        return
+    url = "https://kahootbot.net/api/init"
+    client_id = "qm68612le"
 
-    # Validate name
-    if not args.name.strip():
-        print("Error: Name cannot be empty.")
-        return
-    if len(args.name) > 20:
-        print("Error: Name is too long (max 20 characters).")
-        return
+    for i in range(1, amount + 1):
+        bot_name = f"{name}_{i}"
+        payload = {
+            "pin": pin,
+            "amount": 1,
+            "name": bot_name,
+            "clientId": client_id,
+            "recaptchaToken": "true"
+        }
 
-    try:
-        send_request(args.pin, args.amount, args.name)
-    except KeyboardInterrupt:
-        print("\nOperation cancelled by user.")
-    except Exception as e:
-        print(f"Unexpected error: {e}")
+        print(f"{YELLOW}[!] Sending bot {i}/{amount}: {bot_name}{RESET}")
+        try:
+            response = requests.post(url, data=payload, verify=False)
+            if response.ok:
+                print(f"{GREEN}[+] Bot {i} joined successfully!{RESET}")
+            else:
+                print(f"{RED}[-] Bot {i} failed to join: {response.status_code}{RESET}")
+        except requests.RequestException as e:
+            print(f"{RED}[-] Bot {i} network error: {e}{RESET}")
+        time.sleep(0.5)  # short delay to reduce server load
 
+    print(f"{GREEN}[+] All bots processed!{RESET}")
 
 if __name__ == "__main__":
     main()
