@@ -24,10 +24,19 @@ Installation (Linux/macOS, Non-Sudo)
 Step 1: Download the installer:
 Download the lastest version for the releases tab: https://github.com/VolcanoExacutor/Kahoot-Bot-spammer/releases
 
-Step 2: Run the installer:
+Step 2: Go to the file
 ```bash
 cd downloads
 ```
+Step 3: Make it exacutable
+```bash
+chmod +x installmac.sh
+```
+or for linux
+```bash
+chmod +x installlinux.sh
+```
+Step 4: Run the installer:
 ```bash
 ./installmac
 ```
@@ -35,12 +44,10 @@ or for linux
 ```bash
 ./installlinux
 ```
-Step 3: Restart your terminal or source your shell configuration:
-source ~/.bashrc   # or ~/.zshrc for zsh
-
-Step 4: Verify installation:
+Step 5: Verify installation:
+```bash
 kbot -h
-
+```
 --------------------------------------------------
 Dependencies
 --------------------------------------------------
