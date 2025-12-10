@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import argparse
 import requests
+import sys
 
 def send_request(pin, amount, name):
     url = "https://kahootbot.net/api/init"
@@ -29,15 +30,31 @@ def send_request(pin, amount, name):
     }
 
     try:
-        response = requests.post(url, headers=headers, data=data)
-        if response.status_code == 200:
-            print("Request sent successfully!")
-            print(response.text)
-        else:
-            print(f"Failed to send request. Status code: {response.status_code}")
-            print(response.text)
-    except Exception as e:
-        print(f"Error sending request: {e}")
+        response = requests.post(url, headers=headers, data=data, timeout=10)
+    except requests.ConnectionError:
+        print("Error: Could not connect to KahootBot API. Check your internet connection.")
+        return
+    except requests.Timeout:
+        print("Error: Request timed out. Try again later.")
+        return
+    except requests.RequestException as e:
+        print(f"Error: Unexpected request error: {e}")
+        return
+
+    if response.status_code == 200:
+        print("Request sent successfully!")
+        print(response.text)
+    elif response.status_code == 400:
+        print("Error: Bad request. Check your arguments and try again.")
+    elif response.status_code == 403:
+        print("Error: Forbidden. You may not have permission to use this API.")
+    elif response.status_code == 404:
+        print("Error: API endpoint not found.")
+    elif response.status_code >= 500:
+        print("Error: Server error at KahootBot API. Try again later.")
+    else:
+        print(f"Error: Unexpected status code {response.status_code}")
+        print(response.text)
 
 
 def main():
@@ -47,38 +64,43 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter
     )
 
-    parser.add_argument(
-        "-p", "--pin",
-        type=str,
-        required=True,
-        help="Kahoot game PIN"
-    )
-    parser.add_argument(
-        "-a", "--amount",
-        type=int,
-        required=True,
-        help="Number of bots to join (1-50)"
-    )
-    parser.add_argument(
-        "-n", "--name",
-        type=str,
-        required=True,
-        help="Nickname for the bot"
-    )
+    parser.add_argument("-p", "--pin", type=str, required=True, help="Kahoot game PIN")
+    parser.add_argument("-a", "--amount", type=int, required=True, help="Number of bots to join (1-50)")
+    parser.add_argument("-n", "--name", type=str, required=True, help="Nickname for the bot")
 
-    args = parser.parse_args()
-
-    # Validate amount
-    if not 1 <= args.amount <= 50:
-        print("Error: amount must be between 1 and 50")
+    try:
+        args = parser.parse_args()
+    except SystemExit:
+        # argparse will already print the error
         return
 
     # Validate PIN
     if not args.pin.isdigit():
-        print("Error: pin must be numeric")
+        print("Error: PIN must be numeric.")
+        return
+    if len(args.pin) < 5 or len(args.pin) > 10:
+        print("Error: PIN length seems invalid (should be 5-10 digits).")
         return
 
-    send_request(args.pin, args.amount, args.name)
+    # Validate amount
+    if not (1 <= args.amount <= 50):
+        print("Error: Amount must be an integer between 1 and 50.")
+        return
+
+    # Validate name
+    if not args.name.strip():
+        print("Error: Name cannot be empty.")
+        return
+    if len(args.name) > 20:
+        print("Error: Name is too long (max 20 characters).")
+        return
+
+    try:
+        send_request(args.pin, args.amount, args.name)
+    except KeyboardInterrupt:
+        print("\nOperation cancelled by user.")
+    except Exception as e:
+        print(f"Unexpected error: {e}")
 
 
 if __name__ == "__main__":
