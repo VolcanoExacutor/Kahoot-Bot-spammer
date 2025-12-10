@@ -3,7 +3,7 @@
 set -e  # Exit on error
 
 BIN_DIR="$HOME/.local/bin"
-SCRIPT_URL="https://raw.githubusercontent.com/VolcanoExacutor/Kahoot-Bot-spammer/refs/heads/main/Main.py"
+SCRIPT_URL="https://raw.githubusercontent.com/VolcanoExacutor/Kahoot-Bot-spammer/refs/heads/main/main/Main.py"
 KBOT_PATH="$BIN_DIR/kbot.py"
 WRAPPER="$BIN_DIR/kbot"
 
